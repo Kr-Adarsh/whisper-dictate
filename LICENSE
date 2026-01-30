@@ -27,8 +27,8 @@ SOFTWARE.
 
 This project leverages several high-quality open-source libraries:
 
-* **[OpenAI Whisper](https://github.com/openai/whisper):** The core speech-to-text model.
-* **[pynput](https://github.com/moses-palmer/pynput):** Used for capturing the global `ESC` key press.
-* **[sounddevice](https://python-sounddevice.readthedocs.io/):** Handles the microphone audio stream.
-* **[xdotool](https://github.com/jordansissel/xdotool):** Simulates keyboard input to type text into active windows.
-* **[PyTorch](https://pytorch.org/):** Provides the deep learning framework for model execution.
+    [OpenAI Whisper](https://github.com/openai/whisper): The core speech-to-text model.
+    [pynput](https://github.com/moses-palmer/pynput): Used for capturing the global `ESC` key press.
+    [sounddevice](https://python-sounddevice.readthedocs.io/): Handles the microphone audio stream.
+    [xdotool](https://github.com/jordansissel/xdotool): Simulates keyboard input to type text into active windows.
+    [PyTorch](https://pytorch.org/): Provides the deep learning framework for model execution.
