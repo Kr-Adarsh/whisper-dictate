@@ -1,14 +1,38 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Robust cross-distro installer for Whisper Dictate
-# - installs system deps using detected package manager
+# Whisper Dictate installer (final)
+# - cross-distro system deps install
 # - creates .venv and installs python deps
-# - tries to install CUDA-enabled torch if NVIDIA GPU found, else cpu torch
+# - installs CPU torch by default, use --cuda to install CUDA-enabled torch
 # - installs remaining requirements from requirements.txt
 
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+usage() {
+  cat <<EOF
+Usage:
+  ./install.sh          Install CPU-only (default)
+  ./install.sh --cuda   Install CUDA-enabled PyTorch (large download)
+  ./install.sh --help   Show this message
+EOF
+}
+
+# parse args
+USE_CUDA=false
+if [ "${1:-}" = "--help" ]; then
+  usage
+  exit 0
+fi
+if [ "${1:-}" = "--cuda" ] || [ "${1:-}" = "-cuda" ]; then
+  USE_CUDA=true
+fi
+if [ "${1:-}" = "--cpu" ]; then
+  USE_CUDA=false
+fi
+
 echo "Project dir: $PROJECT_DIR"
+echo
 
 # quick python3 check
 if ! command -v python3 >/dev/null 2>&1; then
@@ -17,8 +41,8 @@ if ! command -v python3 >/dev/null 2>&1; then
 fi
 
 # basic internet check (best-effort)
-if ! curl -s --head https://pypi.org/ --max-time 6 >/dev/null 2>&1; then
-  echo "Warning: cannot reach pypi.org. Make sure you have internet access for installation."
+if ! command -v curl >/dev/null 2>&1 || ! curl -s --head https://pypi.org/ --max-time 6 >/dev/null 2>&1; then
+  echo "Warning: cannot reach pypi.org or curl missing. Internet is required for installation."
 fi
 
 # detect package manager
@@ -37,6 +61,7 @@ else
 fi
 
 echo "Using package manager: $PKGMGR"
+echo
 
 # install system dependencies
 case "$PKGMGR" in
@@ -68,50 +93,95 @@ source "$PROJECT_DIR/.venv/bin/activate"
 # pip basics
 python -m pip install --upgrade pip setuptools wheel
 
-echo "Detecting NVIDIA GPU (nvidia-smi)..."
-USE_CUDA=false
-if command -v nvidia-smi >/dev/null 2>&1; then
-  echo "nvidia-smi found. Trying to install CUDA-enabled PyTorch wheel..."
-  USE_CUDA=true
-fi
+# spinner helper (shows activity while background process runs)
+spinner() {
+  local pid=$1
+  local delay=0.15
+  local spinstr='|/-\'
+  printf " "
+  while ps -p "$pid" > /dev/null 2>&1; do
+    for i in 0 1 2 3; do
+      printf "\b%c" "${spinstr:$i:1}"
+      sleep "$delay"
+    done
+  done
+  printf "\b"
+}
 
 # prepare temp file for pip output and ensure cleanup
-TMPFILE="$(mktemp /tmp/torch_install.XXXXXX)"
+TMPFILE="$(mktemp /tmp/whisper_torch_install.XXXXXX)"
 cleanup() {
   rm -f "$TMPFILE" || true
 }
 trap cleanup EXIT
 
-# Install torch: prefer GPU wheel if possible, otherwise CPU wheel
+# Notify user about torch choice
 if [ "$USE_CUDA" = true ]; then
-  set +e
-  echo "Attempting to install torch (GPU wheel) using cu121 index..."
-  pip install --upgrade "torch" --index-url https://download.pytorch.org/whl/cu121 >"$TMPFILE" 2>&1 || true
-  RC=$?
-  set -e
-  if [ $RC -ne 0 ]; then
-    echo "GPU wheel install failed (falling back to CPU-only torch). Last output:"
-    tail -n 200 "$TMPFILE" || true
-    pip install --upgrade "torch" --index-url https://download.pytorch.org/whl/cpu
-  else
-    echo "Installed torch (CUDA-enabled) from cu121 index."
-  fi
+  echo "CUDA install selected."
+  echo "This will download large PyTorch CUDA binaries (~500MB-1.5GB). Make sure you have a working NVIDIA driver (nvidia-smi)."
 else
-  echo "No NVIDIA GPU detected. Installing CPU-only torch wheel."
-  pip install --upgrade "torch" --index-url https://download.pytorch.org/whl/cpu
+  echo "CPU-only install selected (default). This is smaller and works on all machines."
+fi
+echo
+
+# Install torch: run pip install in background and show spinner/progress indicator
+install_torch_bg() {
+  local cmd="$1"
+  # run pip in background, redirect both stdout and stderr to TMPFILE
+  bash -c "$cmd" >"$TMPFILE" 2>&1 &
+  local pip_pid=$!
+  spinner "$pip_pid"
+  wait "$pip_pid"
+  return $?
+}
+
+if [ "$USE_CUDA" = true ]; then
+  # Try CUDA wheel (cu121). If it fails, fall back to CPU wheel.
+  echo "Installing CUDA-enabled PyTorch (cu121 index)..."
+  install_torch_bg "pip install --upgrade torch --index-url https://download.pytorch.org/whl/cu121" || true
+  RC=$?
+  if [ $RC -ne 0 ]; then
+    echo
+    echo "CUDA wheel install failed or was interrupted. Falling back to CPU-only torch. See last logs:"
+    tail -n 200 "$TMPFILE" || true
+    echo
+    echo "Installing CPU-only PyTorch..."
+    install_torch_bg "pip install --upgrade torch --index-url https://download.pytorch.org/whl/cpu"
+    RC=$?
+    if [ $RC -ne 0 ]; then
+      echo
+      echo "Failed to install torch (CPU wheel) as well. See logs in $TMPFILE"
+      exit 1
+    fi
+  fi
+  echo
+  echo "PyTorch installation complete."
+else
+  echo "Installing CPU-only PyTorch..."
+  install_torch_bg "pip install --upgrade torch --index-url https://download.pytorch.org/whl/cpu"
+  RC=$?
+  if [ $RC -ne 0 ]; then
+    echo
+    echo "Failed to install CPU PyTorch. See logs in $TMPFILE"
+    tail -n 200 "$TMPFILE" || true
+    exit 1
+  fi
+  echo
+  echo "PyTorch installation complete."
 fi
 
-# Install remaining python requirements
+# Install remaining python requirements (if present)
 if [ -f "requirements.txt" ]; then
+  echo "Installing remaining Python requirements from requirements.txt ..."
   pip install -r requirements.txt
 else
   echo "requirements.txt missing in $PROJECT_DIR. Please make sure it's present."
 fi
 
 echo
-echo "#! Setup complete."
-echo "To start dictation (once):"
+echo "Setup complete."
+echo "To start dictation (manual test):"
 echo "  cd \"$PROJECT_DIR\" && source .venv/bin/activate && ./whisper_dictate.sh"
 echo
-echo "To make a global shortcut, point it at \"$PROJECT_DIR/whisper_dictate.sh\""
+echo "To make a global shortcut, point it at: $PROJECT_DIR/whisper_dictate.sh"
 echo "Enjoy!"
