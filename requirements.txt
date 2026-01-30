@@ -1,0 +1,8 @@
+git+https://github.com/openai/whisper.git@main
+sounddevice
+soundfile
+numpy
+pynput
+tqdm
+
+autopep8
