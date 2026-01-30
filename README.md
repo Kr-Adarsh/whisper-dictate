@@ -45,7 +45,7 @@ Runs fully locally. No cloud, no API keys, no telemetry.
 Clone the repository and run the installer:
 
 ```bash
-git clone https://github.com/<your-username>/whisper-dictate.git
+git clone https://github.com/Kr-Adarsh/whisper-dictate.git
 cd whisper-dictate
 chmod +x install.sh
 ./install.sh (ref below)
@@ -150,7 +150,7 @@ Available models:
 | **No text is typed** | 1. Ensure a text field is focused (cursor is active).<br>2. Test `xdotool` manually:<br>`xdotool type "hello"` |
 | **Microphone not detected** | 1. Check input device in system sound settings.<br>2. Verify detection with:<br>`arecord -l` |
 | **GPU not being used** | 1. Ensure NVIDIA drivers are installed.<br>2. Check `nvidia-smi`.<br>3. Re-run `install.sh` to retry CUDA setup. |
-
+| **Still having Issues?** | Common dude, You're linux user. (^^) |
 ---
 
 ## License
