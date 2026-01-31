@@ -5,6 +5,7 @@ Offline, simple, system-wide speech-to-text for Linux using OpenAI Whisper.
 Press a shortcut, speak, and the text is typed directly into the currently focused text field.
 Runs fully locally. No cloud, no API keys, no telemetry.
 
+![Whisper Dictate Demo](assets/final_vid.mp4)
 ---
 
 ## Features
