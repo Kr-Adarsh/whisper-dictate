@@ -150,7 +150,7 @@ Available models:
 | **No text is typed** | 1. Ensure a text field is focused (cursor is active).<br>2. Test `xdotool` manually:<br>`xdotool type "hello"` |
 | **Microphone not detected** | 1. Check input device in system sound settings.<br>2. Verify detection with:<br>`arecord -l` |
 | **GPU not being used** | 1. Ensure NVIDIA drivers are installed.<br>2. Check `nvidia-smi`.<br>3. Re-run `install.sh` to retry CUDA setup. |
-| **Still having Issues?** | Common dude, You're linux user. (^^) |
+| **Still having Issues?** | c'mon dude, you're linux user. (^^) |
 ---
 
 ## License
