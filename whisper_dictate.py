@@ -27,8 +27,8 @@ from pynput import keyboard
 import whisper
 
 # Config
-MODEL_NAME = os.environ.get("WHISPER_MODEL", "base")  # change to tiny/small/medium if desired
-CHUNK_SECONDS = 3.5  # length of each audio chunk (seconds)
+MODEL_NAME = os.environ.get("WHISPER_MODEL", "small")  # change to tiny/small/medium if desired
+CHUNK_SECONDS = 4.5  # length of each audio chunk (seconds)
 SAMPLE_RATE = 16000
 CHANNELS = 1
 
