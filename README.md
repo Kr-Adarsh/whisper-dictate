@@ -123,9 +123,9 @@ No manual configuration is required.
 
 ## Configuration (Optional)
 
-Change the Whisper model by setting an environment variable:
+Change the Whisper model in whisper_dictate.py:
 
-    export WHISPER_MODEL=base
+    WHISPER_MODEL=base
 
 Available models:
 - tiny   (fastest, least accurate)
@@ -133,6 +133,10 @@ Available models:
 - small (ref the openai/whisper repo)
 - medium
 
+```python
+silence_threshold = 0.002 # Adjust this to make it more or less sensitive to silence (lower = more sensitive). You can see it in the terminal output your current mic sensitivity and adjust accordingly.
+```
+##### Other parameters can also be tweaked in the script via whisper_dictate.py.
 ---
 
 ## Project Files

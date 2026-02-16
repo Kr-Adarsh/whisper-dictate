@@ -31,7 +31,7 @@ MODEL_NAME = os.environ.get("WHISPER_MODEL", "small")  # change to tiny/small/me
 CHUNK_SECONDS = 4.5  # length of each audio chunk (seconds)
 SAMPLE_RATE = 16000
 CHANNELS = 1
-SILENCE_THRESHOLD = 0.002  #to avodi hallucinations \change it accordingly
+silence_threshold = 0.002  #to avodi hallucinations \change it accordingly
 
 stop_flag = False
 
@@ -102,7 +102,7 @@ def transcriber_worker():
 
             volume = np.abs(data).mean()
             print("Volume:", volume)
-            if volume < SILENCE_THRESHOLD:
+            if volume < silence_threshold:
                 # too quiet, skip this chunk
                 buffer = []
                 samples_collected = 0
