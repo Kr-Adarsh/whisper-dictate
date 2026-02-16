@@ -31,6 +31,7 @@ MODEL_NAME = os.environ.get("WHISPER_MODEL", "small")  # change to tiny/small/me
 CHUNK_SECONDS = 4.5  # length of each audio chunk (seconds)
 SAMPLE_RATE = 16000
 CHANNELS = 1
+SILENCE_THRESHOLD = 0.002  #to avodi hallucinations \change it accordingly
 
 stop_flag = False
 
@@ -98,6 +99,14 @@ def transcriber_worker():
 
             # normalize to float32
             data = data.astype('float32')
+
+            volume = np.abs(data).mean()
+            print("Volume:", volume)
+            if volume < SILENCE_THRESHOLD:
+                # too quiet, skip this chunk
+                buffer = []
+                samples_collected = 0
+                continue
 
             # write to temp wav
             with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as f:
