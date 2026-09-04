@@ -1,8 +1,6 @@
-git+https://github.com/openai/whisper.git@main
-sounddevice
-soundfile
-numpy
-pynput
-tqdm
-
-autopep8
+faster-whisper>=1.0.0
+sounddevice>=0.4.6
+soundfile>=0.12.1
+numpy>=1.24.0
+pynput>=1.7.6
+tqdm>=4.65.0

@@ -1,16 +1,18 @@
 #!/usr/bin/env bash
-# robust wrapper that runs relative to its own location
+#wrapper for whisper-dictate that runs relative to its own directory
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
-# activate venv if exists
+# Source .env if present
+if [ -f ".env" ]; then
+    set -a
+    source ".env"
+    set +a
+fi
+
 if [ -f ".venv/bin/activate" ]; then
-    # shellcheck disable=SC1091
     source ".venv/bin/activate"
 fi
 
-# optional env overrides:
-# export WHISPER_MODEL=base
-
-python "$SCRIPT_DIR/whisper_dictate.py"
+exec python3 "$SCRIPT_DIR/whisper_dictate.py" "$@"

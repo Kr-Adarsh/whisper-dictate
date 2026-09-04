@@ -1,19 +1,23 @@
 # Whisper Dictate (Linux)
 
-Offline, simple, system-wide speech-to-text for Linux using OpenAI Whisper.
+Offline, fast, simple, system-wide speech-to-text for Linux using Faster-Whisper and Silero VAD.
 
-Press a shortcut, speak, and the text is typed directly into the currently focused text field.
-Runs fully locally. No cloud, no API keys, no telemetry.
+Press a shortcut, speak, and the text is typed directly into whatever text field you are focused on.
+Runs fully locally on your machine. No cloud, no API keys, no telemetry.
 
 [![Demo GIF](whisper_demo.GIF)](https://www.youtube.com/watch?v=5lCzA79Nh_I?si=n5zIrvNtfmzjpADw)
+
 ---
 
 ## Features
 
-- Offline speech-to-text (after first model download)
+- Offline speech-to-text (runs fully locally)
 - Works in any app / text box
-- Uses CPU by default, optional GPU (CUDA) acceleration
-- No background service when idle
+- Silero VAD: cuts audio on natural pauses (no more cut-off words)
+- Fast in-memory transcription (faster-whisper int8 CPU / cuda GPU)
+- Zero word loss on exit (flushes remaining speech when you stop)
+- Single-shortcut toggle (press once to start, press again or ESC to stop)
+- Works great with Indian dialect / conversational English
 - Simple global keyboard shortcut
 - Privacy-friendly
 
@@ -24,7 +28,7 @@ Runs fully locally. No cloud, no API keys, no telemetry.
 - Linux (tested on Ubuntu, should work on most distros)
 - Python 3.9+
 - Microphone
-- Optional: NVIDIA GPU with drivers for faster transcription
+- Optional: NVIDIA GPU with drivers for faster transcription (CPU is already fast with INT8)
 
 ---
 
@@ -32,14 +36,19 @@ Runs fully locally. No cloud, no API keys, no telemetry.
 
 ```text
 .
-├── install.sh           # Cross-distro installer (GPU-aware)
-├── LICENSE              # MIT License
-├── README.md            # Documentation
-├── requirements.txt     # Python dependencies
+├── config.py            # Simple config parser (.env & flags)
+├── vad.py               # Silero VAD pause detection
+├── injector.py          # xdotool / clipboard text typing
 ├── whisper_dictate.py   # Main dictation logic
-└── whisper_dictate.sh   # Execution wrapper (Point your shortcut here)
+├── whisper_dictate.sh   # Launcher script (point your shortcut here)
+├── .env                 # Optional custom settings
+├── change_log.md        # What changed
+├── install.sh           # Cross-distro installer
+├── requirements.txt     # Python dependencies
+└── README.md            # Documentation
 ```
 
+---
 
 ## Installation
 
@@ -48,48 +57,38 @@ Clone the repository and run the installer:
 ```bash
 git clone https://github.com/Kr-Adarsh/whisper-dictate.git
 cd whisper-dictate
-chmod +x install.sh
-./install.sh (ref below)
+chmod +x install.sh whisper_dictate.sh
+./install.sh
 ```
-## Installer options:
+
+### Installer options:
 ```bash 
-./install.sh          # CPU-only install (default)
-./install.sh --cuda   # CUDA-enabled PyTorch (large)
+./install.sh          # CPU install (default, fast int8)
+./install.sh --cuda   # CUDA-enabled PyTorch (for NVIDIA GPU)
 ./install.sh --help   # Show help
-
 ```
-
-
-The installer will:
-- Install system dependencies
-- Create a local Python virtual environment
-- Install Whisper and required Python packages
-- Install CPU or CUDA-enabled PyTorch based on your choice
 
 ---
 
-
 ## Run Dictation (Manual Test)
-```python
+
+```bash
 cd whisper-dictate
-source .venv/bin/activate
 ./whisper_dictate.sh
-# Press ESC to stop dictation
 ```
 
 Usage:
 - Click inside any text field
 - Start speaking
-- Press ESC to stop dictation
-
-When stopped, the process exits and releases CPU/GPU resources.
+- When you pause, text gets typed
+- Press ESC (or trigger the shortcut again) to stop
 
 ---
 
 ## Set Global Keyboard Shortcut (GNOME)
 
 1. Open Settings → Keyboard → Shortcuts
-2. Add a Custom Shortcut (like mine's "ctrl+super+G")
+2. Add a Custom Shortcut (like mine's `ctrl+super+G` or `ctrl+G`)
 
 ```text
 Name:
@@ -103,48 +102,35 @@ Shortcut:
 ```
 
 After this:
-- Press the shortcut to start dictation
-- Press ESC to stop
-
----
-
-## GPU Acceleration
-
-If an NVIDIA GPU and drivers are available, Whisper will use CUDA automatically.
-
-To verify GPU usage:
-
-    nvidia-smi
-
-If CUDA is not available, Whisper falls back to CPU automatically.
-No manual configuration is required.
+- Press shortcut to start dictating (you'll hear a start beep)
+- Press the shortcut again (or press ESC) to stop and finish typing
 
 ---
 
 ## Configuration (Optional)
 
-Change the Whisper model in whisper_dictate.py:
+You can tweak settings in `.env` or pass CLI flags:
 
-    WHISPER_MODEL=base
+```bash
+# Model options: tiny, base, small, medium
+WHISPER_MODEL=base
 
-Available models:
-- tiny   (fastest, least accurate)
-- base   (default, balanced)
-- small (ref the openai/whisper repo)
-- medium
+# Language (en, auto, etc.)
+LANGUAGE=en
 
-```python
-silence_threshold = 0.002 # Adjust this to make it more or less sensitive to silence (lower = more sensitive). You can see it in the terminal output your current mic sensitivity and adjust accordingly.
+# Pause in seconds to trigger typing
+PAUSE_THRESHOLD_SECONDS=0.65
+
+# Sound alerts on start/stop
+SOUND_ALERTS=true
 ```
-##### Other parameters can also be tweaked in the script via whisper_dictate.py.
----
 
-## Project Files
-
-- install.sh            Cross-distro installer (GPU-aware)
-- whisper_dictate.sh    Launcher script (used by keyboard shortcut)
-- whisper_dictate.py    Main dictation logic
-- requirements.txt      Python dependencies
+Or run with flags:
+```bash
+./whisper_dictate.sh --list-devices     # List your mics
+./whisper_dictate.sh --model small      # Use a specific model
+./whisper_dictate.sh --language auto    # Auto-detect language
+```
 
 ---
 
@@ -153,11 +139,13 @@ silence_threshold = 0.002 # Adjust this to make it more or less sensitive to sil
 | Issue | Solution |
 | :--- | :--- |
 | **No text is typed** | 1. Ensure a text field is focused (cursor is active).<br>2. Test `xdotool` manually:<br>`xdotool type "hello"` |
-| **Microphone not detected** | 1. Check input device in system sound settings.<br>2. Verify detection with:<br>`arecord -l` |
-| **GPU not being used** | 1. Ensure NVIDIA drivers are installed.<br>2. Check `nvidia-smi`.<br>3. Re-run `install.sh` to retry CUDA setup. |
+| **Microphone not detected** | 1. Run `./whisper_dictate.sh --list-devices`<br>2. Check sound settings in Linux. |
+| **GPU not being used** | 1. Ensure NVIDIA drivers are installed (`nvidia-smi`).<br>2. Re-run `./install.sh --cuda`. |
 | **Still having Issues?** | c'mon dude, you're linux user. (^^) |
+
 ---
+## Dev Notes:
 
-## License
+*Long time ago, i only knew basics and thus built a simpler pretty direct version of `Whisper` but as i explored and learned more and more vad, stt, tts, etc.. i kept on upgrading this appn locally for my own use.. and honestly had forgotten to push for a long time ;p Anyways, here's `whisper-dictatev2`, it's quite fast, stable and works great (atleast for me), also i've resolved all the previous bugs and cache issues and have made a few more changes before pushing, to make it a lil more generic for others sys. That's it, all the controllers are in .env, feel free to edit em and use it how you'd like.. peace.*
 
-MIT License
+*~Kr-Adarsh*

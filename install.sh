@@ -1,11 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Whisper Dictate installer (final)
-# - cross-distro system deps install
-# - creates .venv and installs python deps
-# - installs CPU torch by default, use --cuda to install CUDA-enabled torch
-# - installs remaining requirements from requirements.txt
+
 
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -67,16 +63,16 @@ echo
 case "$PKGMGR" in
   apt)
     sudo apt update
-    sudo apt install -y python3 python3-venv python3-pip ffmpeg xdotool build-essential libsndfile1 portaudio19-dev libportaudio2 curl
+    sudo apt install -y python3 python3-venv python3-pip ffmpeg xdotool xclip build-essential libsndfile1 portaudio19-dev libportaudio2 curl ydotool
     ;;
   dnf)
-    sudo dnf install -y python3 python3-venv python3-pip ffmpeg xdotool make automake gcc gcc-c++ libsndfile portaudio-devel curl
+    sudo dnf install -y python3 python3-venv python3-pip ffmpeg xdotool xclip make automake gcc gcc-c++ libsndfile portaudio-devel curl ydotool
     ;;
   pacman)
-    sudo pacman -Sy --noconfirm python python-virtualenv ffmpeg xdotool base-devel libsndfile portaudio curl
+    sudo pacman -Sy --noconfirm python python-virtualenv ffmpeg xdotool xclip base-devel libsndfile portaudio curl ydotool
     ;;
   zypper)
-    sudo zypper install -y python3 python3-venv python3-pip ffmpeg xdotool libsndfile1 libportaudio0 curl
+    sudo zypper install -y python3 python3-venv python3-pip ffmpeg xdotool xclip libsndfile1 libportaudio0 curl ydotool
     ;;
 esac
 
